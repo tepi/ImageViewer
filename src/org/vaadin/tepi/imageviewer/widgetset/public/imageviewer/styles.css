@@ -1,0 +1,32 @@
+/* Styles for the ImageViewer add-on */
+
+/* Hack for a really weird ImageViewer/GWT/Vaadin issue  on IE6 and IE7 */
+html {
+	overflow: hidden;
+}
+
+/* Remove outlines when possible */
+.v-imageviewer,
+.v-imageviewer:focus,
+.v-imageviewer:active {
+    -moz-outline-style: none;     
+    outline: none;
+}
+
+/* Background image for image loading place holder */
+.v-imageviewer .v-image .image-loading {
+	background-image: url('images/image-loading.gif');
+	background-position: center bottom;
+	background-repeat: no-repeat;
+}
+.black .v-imageviewer .v-image .image-loading {
+	background-image: url('images/image-loading-black.gif');
+}
+
+/* Remove borders, margin and paddings from images */
+.v-imageviewer img {
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-width: 0;
+}
