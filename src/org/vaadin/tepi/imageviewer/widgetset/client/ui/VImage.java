@@ -17,7 +17,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.reveregroup.gwt.imagepreloader.FitImage;
 import com.reveregroup.gwt.imagepreloader.FitImageLoadEvent;
 import com.reveregroup.gwt.imagepreloader.FitImageLoadHandler;
-import com.vaadin.terminal.gwt.client.BrowserInfo;
+import com.vaadin.client.BrowserInfo;
 
 /**
  * VImage is a widget extending the FlowPanel. A VImage instance contains one
@@ -35,8 +35,9 @@ class VImage extends FlowPanel {
     /** Reference to owner */
     private VImageViewer owner;
 
-    /** Margins around the image element */
+    /** Horizontal margin around the image element */
     private int horizontalMargin;
+    /** Vertical margin around the image element */
     private int verticalMargin;
 
     /** Image element */
@@ -63,9 +64,8 @@ class VImage extends FlowPanel {
     private int startPosition;
     private int endPosition;
 
-    public VImage() {
+    VImage() {
         setStyleName(CLASSNAME);
-
         Style style = getElement().getStyle();
         style.setPosition(Position.ABSOLUTE);
 
@@ -87,7 +87,7 @@ class VImage extends FlowPanel {
      * @param uri
      *            URI pointing to the image to show
      */
-    public void setImageSource(String uri) {
+    void setImageSource(String uri) {
         if (uri == null) {
             return;
         }
@@ -119,7 +119,7 @@ class VImage extends FlowPanel {
             image.addMouseOutHandler(new MouseOutHandler() {
                 public void onMouseOut(MouseOutEvent event) {
                     Style style = image.getElement().getStyle();
-                    if (!isCenter()) {
+                    if (!center) {
                         style.setOpacity(0.7);
                         style.setProperty("filter", "alpha(opacity = 70)");
                     } else {
@@ -136,7 +136,7 @@ class VImage extends FlowPanel {
         style.setPosition(Position.ABSOLUTE);
         style.setVisibility(Visibility.HIDDEN);
         if (mouseOverEffects && !maximized) {
-            if (!isCenter()) {
+            if (!center) {
                 style.setOpacity(0.7);
                 style.setProperty("filter", "alpha(opacity = 70)");
             } else {
@@ -173,128 +173,6 @@ class VImage extends FlowPanel {
         add(image);
     }
 
-    public void setCurrentX(int currentX) {
-        this.currentX = currentX;
-        Style style = getElement().getStyle();
-        style.setLeft(currentX, Unit.PX);
-    }
-
-    public void setCurrentWidth(int currentWidth) {
-        this.currentWidth = currentWidth;
-        Style style = getElement().getStyle();
-        style.setWidth(currentWidth, Unit.PX);
-    }
-
-    public void setCurrentHeight(int currentHeight) {
-        this.currentHeight = currentHeight;
-        Style style = getElement().getStyle();
-        style.setHeight(currentHeight, Unit.PX);
-    }
-
-    public int getStartWidth() {
-        return startWidth;
-    }
-
-    public void setStartWidth(int startWidth) {
-        this.startWidth = startWidth;
-    }
-
-    public int getEndWidth() {
-        return endWidth;
-    }
-
-    public void setEndWidth(int endWidth) {
-        this.endWidth = endWidth;
-    }
-
-    public int getStartPosition() {
-        return startPosition;
-    }
-
-    public void setStartPosition(int startPosition) {
-        this.startPosition = startPosition;
-    }
-
-    public int getEndPosition() {
-        return endPosition;
-    }
-
-    public void setEndPosition(int endPosition) {
-        this.endPosition = endPosition;
-    }
-
-    public int getHorizontalMargin() {
-        return horizontalMargin;
-    }
-
-    public void setHorizontalMargin(int horizontalMargin) {
-        this.horizontalMargin = horizontalMargin;
-    }
-
-    public void setVerticalMargin(int verticalMargin) {
-        this.verticalMargin = verticalMargin;
-    }
-
-    public int getVerticalMargin() {
-        return verticalMargin;
-    }
-
-    public int getCurrentHeight() {
-        return currentHeight;
-    }
-
-    public int getCurrentWidth() {
-        return currentWidth;
-    }
-
-    public int getCurrentX() {
-        return currentX;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-    public VImageViewer getOwner() {
-        return owner;
-    }
-
-    public void setOwner(VImageViewer owner) {
-        this.owner = owner;
-    }
-
-    public boolean isCenter() {
-        return center;
-    }
-
-    public void setCenter(boolean center) {
-        this.center = center;
-    }
-
-    public boolean isMouseOverEffects() {
-        return mouseOverEffects;
-    }
-
-    public void setMouseOverEffects(boolean mouseOverEffects) {
-        this.mouseOverEffects = mouseOverEffects;
-    }
-
-    public int getImageAndMarginWidth() {
-        return image.getWidth() + 2 * horizontalMargin;
-    }
-
-    public boolean isMaximized() {
-        return maximized;
-    }
-
-    public void setMaximized(boolean maximized) {
-        this.maximized = maximized;
-    }
-
     /**
      * Fixes image element sizing and positioning within its container
      */
@@ -326,10 +204,84 @@ class VImage extends FlowPanel {
         }
     }
 
+    void setCurrentX(int currentX) {
+        this.currentX = currentX;
+        Style style = getElement().getStyle();
+        style.setLeft(currentX, Unit.PX);
+    }
+
+    void setCurrentWidth(int currentWidth) {
+        this.currentWidth = currentWidth;
+        Style style = getElement().getStyle();
+        style.setWidth(currentWidth, Unit.PX);
+    }
+
+    void setCurrentHeight(int currentHeight) {
+        this.currentHeight = currentHeight;
+        Style style = getElement().getStyle();
+        style.setHeight(currentHeight, Unit.PX);
+    }
+
     void initAnimation(int endWidth, int endPosition) {
         startWidth = currentWidth;
         startPosition = currentX;
         this.endWidth = endWidth;
         this.endPosition = endPosition;
+    }
+
+    int getStartWidth() {
+        return startWidth;
+    }
+
+    int getEndWidth() {
+        return endWidth;
+    }
+
+    int getStartPosition() {
+        return startPosition;
+    }
+
+    int getEndPosition() {
+        return endPosition;
+    }
+
+    void setHorizontalMargin(int horizontalMargin) {
+        this.horizontalMargin = horizontalMargin;
+    }
+
+    void setVerticalMargin(int verticalMargin) {
+        this.verticalMargin = verticalMargin;
+    }
+
+    int getCurrentWidth() {
+        return currentWidth;
+    }
+
+    int getCurrentX() {
+        return currentX;
+    }
+
+    void setIndex(int index) {
+        this.index = index;
+    }
+
+    void setOwner(VImageViewer owner) {
+        this.owner = owner;
+    }
+
+    void setCenter(boolean center) {
+        this.center = center;
+    }
+
+    void setMouseOverEffects(boolean mouseOverEffects) {
+        this.mouseOverEffects = mouseOverEffects;
+    }
+
+    int getImageAndMarginWidth() {
+        return image.getWidth() + 2 * horizontalMargin;
+    }
+
+    void setMaximized(boolean maximized) {
+        this.maximized = maximized;
     }
 }

@@ -1,7 +1,6 @@
 package org.vaadin.tepi.imageviewer.widgetset.client.ui;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.gwt.animation.client.Animation;
@@ -16,12 +15,8 @@ import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.dom.client.MouseWheelEvent;
 import com.google.gwt.event.dom.client.MouseWheelHandler;
-import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FocusPanel;
-import com.vaadin.terminal.gwt.client.ApplicationConnection;
-import com.vaadin.terminal.gwt.client.Paintable;
-import com.vaadin.terminal.gwt.client.UIDL;
 
 /**
  * VImageViewer is the client side widget of an add-on for Vaadin that allows a
@@ -29,17 +24,17 @@ import com.vaadin.terminal.gwt.client.UIDL;
  * 
  * @author Teppo Kurki
  */
-public class VImageViewer extends FocusPanel implements Paintable,
-        KeyDownHandler, ClickHandler, MouseWheelHandler {
+public class VImageViewer extends FocusPanel implements KeyDownHandler,
+        ClickHandler {
+
+    interface ImageSelectionListener {
+        public void centerImageSelected(int imageIndex);
+    }
+
+    private ImageSelectionListener listener;
+
     /** Style name */
     private static final String CLASSNAME = "v-imageviewer";
-
-    /* ID and application connection references */
-    private String paintableId;
-    private ApplicationConnection client;
-
-    /** Immediate mode */
-    private boolean immediate;
 
     /** Widget root container */
     private final FlowPanel panelRoot;
@@ -51,30 +46,30 @@ public class VImageViewer extends FocusPanel implements Paintable,
     private int currentHeight;
 
     /** Center image width (percentage of total width) */
-    private float centerImageWidth;
+    float centerImageWidth;
 
     /* Individual image margins */
-    private int paddingX;
-    private int paddingY;
+    int paddingX;
+    int paddingY;
 
     /** Index of centered image in relation to all images */
-    private int centerImageIndex;
+    int centerImageIndex;
 
     /** Total amount of images */
-    private int amountOfImages;
+    int amountOfImages;
 
     /** Mouse over effects */
-    private boolean mouseOverEffects;
+    boolean mouseOverEffects;
 
     /** Amount of visible images on each side of the center image */
-    private int sideImages;
+    int sideImages;
     /** Amount of side images prior to enlarging the center image */
-    private int previousSideImages;
+    int previousSideImages;
     /** Each additional side image will be sized down by this factor */
-    private float sideImageReducePercentage;
+    float sideImageReducePercentage;
 
     /** List of URLs pointing to the images */
-    private String[] urls = null;
+    String[] urls = null;
     /**
      * Container for visible images NOTE: Contains also two images that are
      * hidden on both the left and right side of the actually visible images.
@@ -82,25 +77,23 @@ public class VImageViewer extends FocusPanel implements Paintable,
     private VImage[] visibleImages;
 
     /** Are animations enabled */
-    private boolean animationEnabled;
+    boolean animationEnabled;
     /** Is an animation running */
-    private boolean animationRunning;
+    boolean animationRunning;
     /** Duration of one animation in milliseconds */
-    private int animationDuration;
+    int animationDuration;
     /** Queued animations, to be executed after the previous animation finishes */
     private List<Boolean> queuedAnimations = new ArrayList<Boolean>();
 
-    /* Event handler registrations */
-    private HandlerRegistration clickHandler, keyHandler, scrollHandler;
-
     public VImageViewer() {
-        setStyleName(CLASSNAME);
-
         /* Create widget's root panel */
         panelRoot = new FlowPanel();
-        panelRoot.setStyleName(CLASSNAME + "-flow");
         Style style = panelRoot.getElement().getStyle();
         style.setPosition(Position.RELATIVE);
+        setStyleName(CLASSNAME);
+        panelRoot.setStyleName(CLASSNAME + "-flow");
+        style.setWidth(100, Unit.PCT);
+        style.setHeight(100, Unit.PCT);
 
         /* Create image container */
         imageContainer = new FlowPanel();
@@ -109,130 +102,22 @@ public class VImageViewer extends FocusPanel implements Paintable,
         style.setOverflow(Overflow.HIDDEN);
 
         /* Add widgets */
+        setWidget(panelRoot);
         panelRoot.add(imageContainer);
-        add(panelRoot);
 
         /* Register handlers */
-        keyHandler = addDomHandler(this, KeyDownEvent.getType());
-        clickHandler = addDomHandler(this, ClickEvent.getType());
-        scrollHandler = addDomHandler(this, MouseWheelEvent.getType());
-    }
-
-    public void updateFromUIDL(UIDL uidl, ApplicationConnection client) {
-        if (client.updateComponent(this, uidl, true)) {
-            return;
-        }
-        this.client = client;
-        paintableId = uidl.getId();
-
-        if (uidl.hasAttribute("immediate")) {
-            immediate = uidl.getBooleanAttribute("immediate");
-        }
-        if (uidl.hasAttribute("mouseovereffects")) {
-            mouseOverEffects = uidl.getBooleanAttribute("mouseovereffects");
-        }
-        if (uidl.hasAttribute("amountofimages")) {
-            amountOfImages = uidl.getIntAttribute("amountofimages");
-        }
-        if (uidl.hasVariable("centerimageindex")) {
-            centerImageIndex = uidl.getIntVariable("centerimageindex");
-        }
-        /* Parse URLs from resource UIDLs */
-        if (uidl.getChildByTagName("resources") != null) {
-            urls = new String[amountOfImages];
-            UIDL resources = uidl.getChildByTagName("resources");
-            Iterator<Object> i = resources.getChildIterator();
-            int ix = 0;
-            while (i.hasNext()) {
-                UIDL resource = (UIDL) i.next();
-                urls[ix] = client.translateVaadinUri(resource
-                        .getStringAttribute("resource"));
-                ix++;
+        addDomHandler(this, KeyDownEvent.getType());
+        addDomHandler(this, ClickEvent.getType());
+        addMouseWheelHandler(new MouseWheelHandler() {
+            public void onMouseWheel(MouseWheelEvent event) {
+                event.preventDefault();
+                if (event.isNorth()) {
+                    moveImages(true);
+                } else {
+                    moveImages(false);
+                }
             }
-        }
-        /* Do not update side image count if the center image is maximized */
-        if (uidl.hasAttribute("sideimages") && previousSideImages == 0) {
-            sideImages = uidl.getIntAttribute("sideimages");
-        }
-        if (uidl.hasAttribute("centerImageRelativeWidth")) {
-            centerImageWidth = uidl
-                    .getFloatAttribute("centerImageRelativeWidth");
-        }
-        if (uidl.hasAttribute("sideImageRelativeWidth")) {
-            sideImageReducePercentage = uidl
-                    .getFloatAttribute("sideImageRelativeWidth");
-        }
-        if (uidl.hasAttribute("animationEnabled")) {
-            animationEnabled = uidl.getBooleanAttribute("animationEnabled");
-        }
-        if (uidl.hasAttribute("animationDuration")) {
-            animationDuration = uidl.getIntAttribute("animationDuration");
-        }
-        if (uidl.hasAttribute("paddingx")) {
-            paddingX = uidl.getIntAttribute("paddingx");
-        }
-        if (uidl.hasAttribute("paddingy")) {
-            paddingY = uidl.getIntAttribute("paddingy");
-        }
-
-        /* Update widget dimensions */
-        currentWidth = getElement().getScrollWidth();
-        currentHeight = getElement().getScrollHeight();
-
-        /*
-         * Fix side image count to ensure that only a reasonable amount of
-         * images is visible (= no duplicate images visible).
-         */
-        if (amountOfImages < 3) {
-            sideImages = 0;
-        } else if (2 * sideImages + 1 > amountOfImages) {
-            sideImages = (amountOfImages - 1) / 2;
-        }
-
-        /* If images exist, render the images. Otherwise clear the panel. */
-        if (amountOfImages > 0) {
-            renderImages();
-        } else {
-            panelRoot.clear();
-        }
-    }
-
-    @Override
-    public void setWidth(String width) {
-        int newWidth = 0;
-        if (width == null || "".equals(width)) {
-            newWidth = 200 + 100 * 2 * sideImages;
-        } else {
-            newWidth = Integer.parseInt(width.substring(0,
-                    width.lastIndexOf("px")));
-        }
-        currentWidth = newWidth;
-        Style style = getElement().getStyle();
-        style.setWidth(newWidth, Unit.PX);
-        style = imageContainer.getElement().getStyle();
-        style.setWidth(newWidth, Unit.PX);
-        /* Fix image sizes */
-        resizeImages();
-    }
-
-    @Override
-    public void setHeight(String height) {
-        int newHeight = 0;
-        if (height == null || "".equals(height)) {
-            newHeight = 200;
-        } else {
-            newHeight = Integer.parseInt(height.substring(0,
-                    height.lastIndexOf("px")));
-        }
-        currentHeight = newHeight;
-        Style style = getElement().getStyle();
-        style.setHeight(newHeight, Unit.PX);
-        style = panelRoot.getElement().getStyle();
-        style.setHeight(newHeight, Unit.PX);
-        style = imageContainer.getElement().getStyle();
-        style.setHeight(newHeight, Unit.PX);
-        /* Fix image sizes */
-        resizeImages();
+        });
     }
 
     /**
@@ -242,13 +127,11 @@ public class VImageViewer extends FocusPanel implements Paintable,
         if (KeyCodes.KEY_HOME == event.getNativeKeyCode()) {
             centerImageIndex = 0;
             renderImages();
-            client.updateVariable(paintableId, "centerimageindex",
-                    centerImageIndex, immediate);
+            updateCenterImage();
         } else if (KeyCodes.KEY_END == event.getNativeKeyCode()) {
             centerImageIndex = amountOfImages - 1;
             renderImages();
-            client.updateVariable(paintableId, "centerimageindex",
-                    centerImageIndex, immediate);
+            updateCenterImage();
         } else if (event.isRightArrow() || event.isDownArrow()) {
             moveImages(false);
         } else if (event.isLeftArrow() || event.isUpArrow()) {
@@ -263,62 +146,14 @@ public class VImageViewer extends FocusPanel implements Paintable,
         setFocus(true);
     }
 
-    public void onMouseWheel(MouseWheelEvent event) {
-        if (animationRunning) {
-            return;
-        }
-        event.preventDefault();
-        moveImages(event.isNorth());
-    }
-
-    @Override
-    protected void onDetach() {
-        super.onDetach();
-        clickHandler.removeHandler();
-        keyHandler.removeHandler();
-        scrollHandler.removeHandler();
-    }
-
-    /**
-     * Handle image click event. If the center image is clicked it will be
-     * maximized and other images hidden. If some other image is clicked it will
-     * be brought in the center.
-     * 
-     * @param index
-     *            Index of the clicked image; relative to visibleImages array.
-     */
-    void imageClicked(int index) {
-        int offset = visibleImages.length / 2 - index;
-        if (offset > 0) {
-            while (offset > 0) {
-                moveImages(true);
-                offset--;
-            }
-        } else if (offset < 0) {
-            while (offset < 0) {
-                moveImages(false);
-                offset++;
-            }
-        } else {
-            /* Only handle minimize/maximize when other animation are finished */
-            if (!animationRunning) {
-                if (sideImages == 0 && previousSideImages != 0) {
-                    sideImages = previousSideImages;
-                    previousSideImages = 0;
-                    resizeCenterImage(false);
-                } else {
-                    previousSideImages = sideImages;
-                    sideImages = 0;
-                    resizeCenterImage(true);
-                }
-            }
-        }
-    }
-
     /**
      * Renders visible images to the image container
      */
-    private void renderImages() {
+    void renderImages() {
+        if (amountOfImages <= 0) {
+            panelRoot.clear();
+            return;
+        }
         /* Empty the panel initially */
         imageContainer.clear();
         /* Determine amount of images to render */
@@ -364,7 +199,7 @@ public class VImageViewer extends FocusPanel implements Paintable,
      * Calculates correct sizes for all visible images and sets them to the
      * VImage objects.
      */
-    private void resizeImages() {
+    void resizeImages() {
         if (visibleImages == null || visibleImages.length == 0) {
             return;
         }
@@ -385,7 +220,7 @@ public class VImageViewer extends FocusPanel implements Paintable,
             }
             return;
         }
-    
+
         /* Set center image size */
         visibleImages[center].setCurrentWidth(Math.round(centerImageWidth
                 * currentWidth));
@@ -394,7 +229,7 @@ public class VImageViewer extends FocusPanel implements Paintable,
         /* Set center image position */
         visibleImages[center].setCurrentX(Math
                 .round(((1 - centerImageWidth) / 2 * currentWidth)));
-    
+
         /* Set side image sizes and positions */
         int nextWidth = 0;
         int leftPosition = Math
@@ -426,6 +261,76 @@ public class VImageViewer extends FocusPanel implements Paintable,
         }
         for (int i = 0; i < visibleImages.length; i++) {
             visibleImages[i].fixImageSizeAndPosition();
+        }
+    }
+
+    /**
+     * Handle image click event. If the center image is clicked it will be
+     * maximized and other images hidden. If some other image is clicked it will
+     * be brought in the center.
+     * 
+     * @param index
+     *            Index of the clicked image; relative to visibleImages array.
+     */
+    void imageClicked(int index) {
+        int offset = visibleImages.length / 2 - index;
+        if (offset > 0) {
+            while (offset > 0) {
+                moveImages(true);
+                offset--;
+            }
+        } else if (offset < 0) {
+            while (offset < 0) {
+                moveImages(false);
+                offset++;
+            }
+        } else {
+            /* Only handle minimize/maximize when other animation are finished */
+            if (!animationRunning) {
+                if (sideImages == 0 && previousSideImages != 0) {
+                    sideImages = previousSideImages;
+                    previousSideImages = 0;
+                    resizeCenterImage(false);
+                } else {
+                    previousSideImages = sideImages;
+                    sideImages = 0;
+                    resizeCenterImage(true);
+                }
+            }
+        }
+    }
+
+    boolean updateWidth(int newWidth) {
+        if (newWidth != currentWidth) {
+            currentWidth = newWidth;
+            Style style = imageContainer.getElement().getStyle();
+            style.setWidth(newWidth, Unit.PX);
+            return true;
+        }
+        return false;
+    }
+
+    boolean updateHeight(int newHeight) {
+        if (newHeight != currentHeight) {
+            currentHeight = newHeight;
+            Style style = panelRoot.getElement().getStyle();
+            style.setHeight(newHeight, Unit.PX);
+            style = imageContainer.getElement().getStyle();
+            style.setHeight(newHeight, Unit.PX);
+            return true;
+        }
+        return false;
+    }
+
+    void setImageSelectionListener(ImageSelectionListener listener) {
+        this.listener = listener;
+    }
+
+    void fixSideImageCount() {
+        if (amountOfImages < 3) {
+            sideImages = 0;
+        } else if (2 * sideImages + 1 > amountOfImages) {
+            sideImages = (amountOfImages - 1) / 2;
         }
     }
 
@@ -538,8 +443,13 @@ public class VImageViewer extends FocusPanel implements Paintable,
             queuedAnimations.remove(0);
             moveImages(nextAnimation);
         }
-        client.updateVariable(paintableId, "centerimageindex",
-                centerImageIndex, immediate);
+        updateCenterImage();
+    }
+
+    private void updateCenterImage() {
+        if (listener != null) {
+            listener.centerImageSelected(centerImageIndex);
+        }
     }
 
     /**
