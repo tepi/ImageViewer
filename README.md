@@ -3,8 +3,6 @@ ImageViewer
 
 ImageViewer is an attempt to create "flash-like" animated image viewer without actually using flash. This was done mostly as an experiment to see if this would be more or less demanding than Flash on older hardware. 
 
-Installation and usage instructions are provided in doc/readme.txt.
-
 License
 =======
 
