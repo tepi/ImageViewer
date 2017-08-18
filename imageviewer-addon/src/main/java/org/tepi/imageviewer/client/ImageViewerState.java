@@ -28,4 +28,6 @@ public class ImageViewerState extends TabIndexState {
 	public boolean mouseOverEffects;
 	/** Amount of images added to the viewer */
 	public int imageCount;
+	/** Move Direction */
+	public Directions direction = Directions.NODIRECTION;
 }
