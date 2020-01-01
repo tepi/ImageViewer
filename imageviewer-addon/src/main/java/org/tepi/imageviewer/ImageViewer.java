@@ -6,6 +6,7 @@ import java.util.EventObject;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.tepi.imageviewer.client.Directions;
 import org.tepi.imageviewer.client.ImageViewerServerRpc;
 import org.tepi.imageviewer.client.ImageViewerState;
 
@@ -62,8 +63,17 @@ public class ImageViewer extends AbstractComponent implements Focusable {
 				}
 			}
 		}
+		/**
+		 * rpc call to reset the move direction
+		 */
+		@Override
+		public void moveFinished() {
+			ImageViewer.this.getState().direction = Directions.NODIRECTION;
+		}
 	};
 
+
+	
 	/**
 	 * Default constructor of ImageViewer.
 	 * 
@@ -88,6 +98,15 @@ public class ImageViewer extends AbstractComponent implements Focusable {
 	@Override
 	protected ImageViewerState getState() {
 		return (ImageViewerState) super.getState();
+	}
+
+	/**
+	 * Trigger a movement of the current image to the left/right. Will trigger the animation, if the animation is enabled.
+	 * 
+	 * @param direction The direction the images will scroll.
+	 */
+	public void move(Directions direction) {
+		this.getState().direction = direction;
 	}
 
 	/**

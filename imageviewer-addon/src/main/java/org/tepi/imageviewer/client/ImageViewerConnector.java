@@ -30,6 +30,17 @@ public class ImageViewerConnector extends AbstractComponentConnector
 		if (getWidget().animationRunning) {
 			return;
 		}
+		
+		/*
+		 * If the direction changed then move the images and signal the server the movement finished.
+		 * Skip the rest to prevent the re-rendering of all images.
+		 */
+		if (stateChangeEvent.hasPropertyChanged("direction") && !Directions.NODIRECTION.equals(getState().direction)) {
+			getWidget().move(getState().direction);
+			this.moveFinished();
+			return;
+		}
+		
 		getWidget().mouseOverEffects = getState().mouseOverEffects;
 		getWidget().amountOfImages = getState().imageCount;
 		getWidget().centerImageIndex = getState().centerImageIndex;
@@ -73,4 +84,11 @@ public class ImageViewerConnector extends AbstractComponentConnector
 	public void centerImageSelected(int imageIndex) {
 		rpc.centerImageSelected(imageIndex);
 	}
+	
+	/**
+	 * makes and rpc call to signal that the movement is finished
+	 */
+	private void moveFinished() {
+        rpc.moveFinished();
+    }
 }

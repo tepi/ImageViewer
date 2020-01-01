@@ -335,6 +335,20 @@ public class VImageViewer extends FocusPanel implements KeyDownHandler,
     }
 
     /**
+     * Moves the current image one step left or right. Animates the movement if animations are enabled.
+     * 
+     * @param direction -
+     */
+    public void move(Directions direction) {
+        if (direction.equals(Directions.LEFT)) {
+            moveImages(true);
+        }
+        else {
+            moveImages(false);
+        }
+    }
+    
+    /**
      * Moves the image set one step left or right. Animates the movement if
      * animations are enabled.
      * 

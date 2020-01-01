@@ -7,16 +7,19 @@ import javax.servlet.annotation.WebServlet;
 
 import org.tepi.imageviewer.ImageViewer;
 import org.tepi.imageviewer.ImageViewer.ImageSelectionListener;
+import org.tepi.imageviewer.client.Directions;
 
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.Title;
 import com.vaadin.annotations.VaadinServletConfiguration;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.Resource;
 import com.vaadin.server.ThemeResource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
 import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
@@ -192,6 +195,18 @@ public class ImageViewerDemoUI extends UI {
 		selectedImage.setWidth("50px");
 		hl.addComponent(selectedImage);
 		hl.setComponentAlignment(selectedImage, Alignment.BOTTOM_CENTER);
+		
+		Button moveLeft = new Button(VaadinIcons.ARROW_LEFT);
+		moveLeft.setDescription("Move image left");
+		moveLeft.addClickListener(event -> this.imageViewer.move(Directions.LEFT));
+		hl.addComponent(moveLeft);
+		hl.setComponentAlignment(moveLeft, Alignment.BOTTOM_CENTER);
+
+		Button moveRight = new Button(VaadinIcons.ARROW_RIGHT);
+		moveRight.setDescription("Move image right");
+		moveRight.addClickListener(event -> this.imageViewer.move(Directions.RIGHT));
+		hl.addComponent(moveRight);
+		hl.setComponentAlignment(moveRight, Alignment.BOTTOM_CENTER);
 
 		return hl;
 	}
